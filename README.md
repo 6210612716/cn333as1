@@ -12,4 +12,4 @@ Number Guessing Game เป็น app ทายตัวเลขจากระ
 - นายภูชิชย์ กลีบมาลัย 6210612716
 
 ## ตัวอย่างการใช้งาน
-- [YouTube](https://www.youtube.com/watch?v=1n72mKpqmgg)
+- [YouTube](https://www.youtube.com/watch?v=-QOy91nXDRI)

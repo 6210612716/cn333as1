@@ -1,101 +1,202 @@
 package com.example.gt3
+
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.widget.Button
-import android.widget.EditText
-import android.widget.TextView
-import android.view.inputmethod.EditorInfo
-//import com.example.gt3.R
-//import kotlinx.android.synthetic.main.activity_main.*
+import androidx.activity.compose.setContent
+import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+import com.example.gt3.ui.theme.Gt3Theme
 
 class MainActivity : AppCompatActivity() {
-    private var targetNumber = 0
-    private var guessCount = 0
-    private lateinit var guessEditText: EditText
-    private lateinit var guessButton: Button
-    private lateinit var newGameButton: Button
-    private lateinit var feedbackTextView: TextView
-    private lateinit var guessCountTextView: TextView
-    private lateinit var resultTextView: TextView
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-
-        guessEditText = findViewById(R.id.guessEditText)
-        guessButton = findViewById(R.id.guessButton)
-        newGameButton = findViewById(R.id.newGameButton)
-        feedbackTextView = findViewById(R.id.feedbackTextView)
-        guessCountTextView = findViewById(R.id.guessCountTextView)
-        resultTextView = findViewById(R.id.resultTextView)
-
-        guessEditText.setOnEditorActionListener { _, actionId, _ ->
-            if (actionId == EditorInfo.IME_ACTION_DONE) {
-                guessButton.performClick()
-                true
-            } else {
-                false
-            }
-        }
-
-        newGame()
-        guessButton.setOnClickListener {
-            val guessIsBlank = guessEditText.text.toString()
-            if (guessIsBlank.isBlank()) {
-                guessEditText.error = "Don't leave it blank."
-                return@setOnClickListener
-            }
-            val guessValid = guessIsBlank.toIntOrNull()
-            if (guessValid == null || guessValid < 1 || guessValid > 1000) {
-                guessEditText.text.clear()
-                guessEditText.error = "Please enter a valid number."
-                return@setOnClickListener
-            }
-            val guess = guessEditText.text.toString().toInt()
-            feedbackTextView.text = ""
-            guessCount++
-            guessCountTextView.text = "Guesses: $guessCount"
-            if (guess == targetNumber) {
-                endGame(true)
-                guessButton.isEnabled = false
-                guessEditText.isEnabled = false
-
-                guessEditText.hint = ""
-                guessButton.visibility = Button.GONE
-                newGameButton.text = "Play again"
-
-            } else if (guessCount < 1000) {
-                if (guess < targetNumber) {
-                    feedbackTextView.text = "Hint: Your guess is too low."
-                } else {
-                    feedbackTextView.text = "Hint: Your guess is too high."
+        setContent {
+            Gt3Theme {
+                // A surface container using the 'background' color from the theme
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colors.background
+                ) {
+                    GameScreen()
                 }
             }
-            guessEditText.text.clear()
-        }
-
-        newGameButton.setOnClickListener {
-            newGame()
-            guessButton.isEnabled = true
-            guessEditText.isEnabled = true
         }
     }
+}
 
-    private fun newGame() {
+@Composable
+fun GameScreen() {
+    var targetNumber by remember { mutableStateOf((1..1000).random()) }
+    var guessCount by remember { mutableStateOf(0) }
+    var guessTextFieldValue by remember { mutableStateOf("") }
+    var feedbackText by remember { mutableStateOf("") }
+    var resultText by remember { mutableStateOf("") }
+    var isGuessButtonEnabled by remember { mutableStateOf(true) }
+    var isNewGameButtonEnabled by remember { mutableStateOf(true) }
+
+    fun newGame() {
+        isGuessButtonEnabled = true
+        guessTextFieldValue = ""
         targetNumber = (1..1000).random()
         guessCount = 0
-        guessCountTextView.text = "Guesses: $guessCount"
-        resultTextView.text = ""
-        feedbackTextView.text = ""
-
-        guessEditText.hint = "Enter your guess"
-        guessButton.visibility = Button.VISIBLE
-        newGameButton.text = "New Game"
+        resultText = ""
+        feedbackText = ""
     }
 
-    private fun endGame(win: Boolean) {
-        if (win) {
-            resultTextView.text = "Congratulation!\nYou won in ${guessCount} guesses!"
+    fun guessButtonClick() {
+        val guess = guessTextFieldValue.toIntOrNull()
+        if (guess == null || guess < 1 || guess > 1000) {
+            guessTextFieldValue = ""
+            feedbackText = "Please enter a valid number."
+        } else {
+            guessCount++
+            if (guess == targetNumber) {
+                guessCount-- //
+                isGuessButtonEnabled = false
+                resultText = if (guessCount == 1) {
+                    "Congratulations! You won in $guessCount guess!"
+                } else {
+                    "Congratulations! You won in $guessCount guesses!"
+                }
+            } else {
+                feedbackText = if (guess < targetNumber) {
+                    "Hint: $guess is too low."
+                } else {
+                    "Hint: $guess is too high."
+                }
+            }
+            guessTextFieldValue = ""
         }
+    }
+
+    Column(
+        modifier = Modifier.padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = stringResource(id = R.string.instructions),
+            modifier = Modifier
+                .padding(bottom = 16.dp),
+            fontSize = 20.sp,
+            textAlign = TextAlign.Center
+        )
+        Divider(
+            color = colorResource(id = R.color.greyLight),
+            thickness = 1.dp,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+        )
+        if (resultText.isNotBlank()) {
+            Text(
+                text = resultText,
+                color = colorResource(id = R.color.yellow),
+                modifier = Modifier.padding(16.dp),
+                fontSize = 19.sp
+            )
+        } else if (feedbackText == stringResource(id = R.string.enter_valid_number)) {
+            Text(
+                text = feedbackText,
+                color = Color.Red,
+                modifier = Modifier.padding(16.dp),
+                fontSize = 19.sp
+            )
+        } else {
+            Text(
+                text = feedbackText,
+                color = colorResource(id = R.color.colorPrimaryDark),
+                modifier = Modifier.padding(16.dp),
+                fontSize = 19.sp
+            )
+        }
+        EditNumberField(
+            value = guessTextFieldValue,
+            onValueChange = { guessTextFieldValue = it },
+            isGuessButtonEnabled = isGuessButtonEnabled,
+        )
+        Column(
+            modifier = Modifier,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+//            Text(
+//                text = stringResource(id = R.string.guess_count, guessCount),
+//                modifier = Modifier.padding(20.dp),
+//                color = colorResource(id = R.color.yellow),
+//                fontSize = 20.sp,
+//            )
+            Spacer(modifier = Modifier.height(32.dp))
+            Button(
+                enabled = isGuessButtonEnabled,
+                onClick = { guessButtonClick() },
+                modifier = Modifier
+                    .padding(8.dp)
+                    .width(250.dp)
+                    .height(50.dp),
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = colorResource(id = R.color.yellowLight),
+                    contentColor = colorResource(id = R.color.white)
+                )
+            ) {
+                Text(
+                    text = stringResource(id = R.string.guess_button),
+                    fontSize = 18.sp
+                )
+            }
+            Button(
+                enabled = isNewGameButtonEnabled,
+                onClick = { newGame() },
+                modifier = Modifier
+                    .padding(8.dp)
+                    .width(250.dp)
+                    .height(45.dp),
+            ) {
+                Text(
+                    text = stringResource(id = R.string.new_game_button),
+                    fontSize = 16.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun EditNumberField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    isGuessButtonEnabled: Boolean
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(text = stringResource(id = R.string.guess_label)) },
+        enabled = isGuessButtonEnabled,
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Number,
+        ),
+        modifier = Modifier
+            .width(300.dp)
+            .padding(16.dp),
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun DefaultPreview() {
+    Gt3Theme() {
+        GameScreen()
     }
 }
